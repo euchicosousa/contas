@@ -23,6 +23,7 @@ export function TransactionItem({
     ? 'text-sm rounded-md gap-1' 
     : 'rounded-lg gap-2'
 
+  
   return (
     <Link
       to="/transactions/$id/edit"

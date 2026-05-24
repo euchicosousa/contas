@@ -1,13 +1,19 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { LoginForm } from '#/features/auth/components/LoginForm'
 import { createServerClient } from '#/integrations/supabase/server'
+import { createServerFn } from '@tanstack/react-start'
+
+const checkAuthSessionFn = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    const supabase = createServerClient()
+    const { data } = await supabase.auth.getSession()
+    return !!data.session
+  })
 
 export const Route = createFileRoute('/login')({
   beforeLoad: async () => {
-    // Check if already authenticated on the server side
-    const supabase = createServerClient()
-    const { data } = await supabase.auth.getSession()
-    if (data.session) {
+    const hasSession = await checkAuthSessionFn()
+    if (hasSession) {
       throw redirect({ to: '/dashboard' })
     }
   },
