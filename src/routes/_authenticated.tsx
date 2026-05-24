@@ -46,7 +46,7 @@ function AuthenticatedLayout() {
       <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 md:px-6 backdrop-blur">
         <div className="flex items-center gap-6">
           <Link to="/dashboard" onClick={closeMenu} className="text-xl font-bold tracking-tight text-primary hover:opacity-80 transition-opacity">
-            CHICO<span className="font-light text-foreground">Finance</span>
+            FINANÇAS
           </Link>
           <nav className="hidden md:flex items-center gap-4 text-sm font-medium">
             <Link 
