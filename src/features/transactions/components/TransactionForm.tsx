@@ -1,0 +1,304 @@
+import * as React from 'react'
+import { useForm } from '@tanstack/react-form'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
+import { GroupSelect } from '#/features/groups/components/GroupSelect'
+import type { CreateTransactionInput } from '../types'
+import { addMonths, format } from 'date-fns'
+
+interface TransactionFormProps {
+  defaultValues?: Partial<CreateTransactionInput>
+  onSubmit: (values: CreateTransactionInput | CreateTransactionInput[]) => Promise<void>
+}
+
+export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProps) {
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
+  const [installments, setInstallments] = React.useState<number>(1)
+
+  const form = useForm({
+    defaultValues: {
+      title: defaultValues?.title ?? '',
+      amount: defaultValues?.amount ?? 0,
+      amount_paid: defaultValues?.amount_paid ?? 0,
+      payment_date: defaultValues?.payment_date ?? new Date().toISOString().split('T')[0],
+      transaction_type: defaultValues?.transaction_type ?? 'saida',
+      categories: defaultValues?.categories ?? [],
+      notes: defaultValues?.notes ?? '',
+      group_id: defaultValues?.group_id ?? null,
+      is_paid: defaultValues?.is_paid ?? false,
+    } as CreateTransactionInput,
+    onSubmit: async ({ value }) => {
+      setErrorMsg(null)
+      try {
+        // Se marcado como pago, garantir que o valor pago é igual ao total
+        const finalValue = {
+          ...value,
+          amount_paid: value.is_paid ? value.amount : value.amount_paid
+        }
+
+        if (finalValue.transaction_type === 'saida' && installments > 1) {
+          const generated: CreateTransactionInput[] = []
+          const [year, month, day] = finalValue.payment_date.split('-').map(Number)
+          
+          for (let i = 1; i <= installments; i++) {
+            const installmentDate = addMonths(new Date(year, month - 1, day), i - 1)
+            generated.push({
+              ...finalValue,
+              title: `${finalValue.title} (${i}/${installments})`,
+              payment_date: format(installmentDate, 'yyyy-MM-dd'),
+            })
+          }
+          await onSubmit(generated)
+        } else {
+          await onSubmit(finalValue)
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message || 'Erro ao salvar transação')
+      }
+    },
+  })
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        form.handleSubmit()
+      }}
+      className="space-y-6"
+    >
+      <div className="space-y-4">
+        {/* Tipo */}
+        <form.Field
+          name="transaction_type"
+          children={(field) => (
+            <div className="space-y-3">
+              <Label>Tipo de Lançamento</Label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => field.handleChange('saida')}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-sm font-semibold transition-all duration-200 border ${
+                    field.state.value === 'saida'
+                      ? 'bg-destructive/15 text-destructive border-destructive/30 shadow-sm'
+                      : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted/50'
+                  }`}
+                >
+                  Saída (-)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    field.handleChange('entrada')
+                    setInstallments(1) // Reset if entry
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-full py-2.5 px-4 text-sm font-semibold transition-all duration-200 border ${
+                    field.state.value === 'entrada'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-sm'
+                      : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted/50'
+                  }`}
+                >
+                  Entrada (+)
+                </button>
+              </div>
+            </div>
+          )}
+        />
+
+        <form.Field
+          name="title"
+          children={(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Título</Label>
+              <Input
+                id={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Ex: Conta de Luz"
+                required
+              />
+            </div>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <form.Field
+            name="amount"
+            children={(field) => (
+              <div className="space-y-2">
+                <form.Subscribe
+                  selector={(state) => state.values.transaction_type}
+                  children={(type) => (
+                    <Label htmlFor={field.name}>
+                      Valor {type === 'saida' && installments > 1 ? 'da Parcela (R$)' : '(R$)'}
+                    </Label>
+                  )}
+                />
+                <Input
+                  id={field.name}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(parseFloat(e.target.value) || 0)}
+                  required
+                />
+              </div>
+            )}
+          />
+          <form.Field
+            name="payment_date"
+            children={(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Data de Pagamento</Label>
+                <Input
+                  id={field.name}
+                  type="date"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+          />
+        </div>
+
+        <form.Field
+          name="is_paid"
+          children={(field) => (
+            <div className="flex flex-col gap-3 pt-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id={field.name}
+                  checked={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-600"
+                />
+                <Label htmlFor={field.name} className="font-medium cursor-pointer">
+                  Lançamento já está pago / concluído
+                </Label>
+              </div>
+              {!field.state.value && (
+                <form.Field
+                  name="amount_paid"
+                  children={(amountPaidField) => (
+                    <div className="ml-6 space-y-1.5 bg-muted/30 p-3 rounded-md border">
+                      <Label htmlFor={amountPaidField.name} className="text-xs text-muted-foreground">Valor pago parcial (se houver)</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-sm">R$</span>
+                        <Input
+                          id={amountPaidField.name}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={amountPaidField.state.value || ''}
+                          onBlur={amountPaidField.handleBlur}
+                          onChange={(e) => amountPaidField.handleChange(parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                          className="w-32 h-8"
+                        />
+                      </div>
+                    </div>
+                  )}
+                />
+              )}
+            </div>
+          )}
+        />
+
+        <form.Subscribe
+          selector={(state) => state.values.transaction_type}
+          children={(type) => 
+            type === 'saida' ? (
+              <div className="space-y-2">
+                <Label htmlFor="installments">Quantidade de Parcelas</Label>
+                <Input
+                  id="installments"
+                  type="number"
+                  min="1"
+                  max="72"
+                  value={installments}
+                  onChange={(e) => setInstallments(parseInt(e.target.value) || 1)}
+                  placeholder="1"
+                />
+                {installments > 1 && (
+                  <form.Subscribe
+                    selector={(state) => state.values.amount}
+                    children={(amount) => (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Serão gerados {installments} lançamentos de R$ {(amount || 0).toFixed(2)} cada.
+                      </p>
+                    )}
+                  />
+                )}
+              </div>
+            ) : null
+          }
+        />
+
+        <form.Field
+          name="notes"
+          children={(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Observações</Label>
+              <Input
+                id={field.name}
+                value={field.state.value || ''}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Detalhes adicionais (opcional)"
+              />
+            </div>
+          )}
+        />
+        
+        <form.Field
+          name="group_id"
+          children={(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Grupo (Pasta)</Label>
+              <form.Subscribe
+                selector={(state) => state.values.transaction_type}
+                children={(type) => (
+                  <GroupSelect
+                    id={field.name}
+                    value={field.state.value ?? null}
+                    onChange={field.handleChange}
+                    transactionType={type}
+                    disabled={form.state.isSubmitting}
+                  />
+                )}
+              />
+            </div>
+          )}
+        />
+      </div>
+
+      {errorMsg && (
+        <div className="bg-destructive/15 text-destructive rounded-md p-3 text-sm">
+          {errorMsg}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 pt-2">
+        <Button 
+          type="button" 
+          variant="outline" 
+          className="w-full" 
+          onClick={() => window.history.back()}
+          disabled={form.state.isSubmitting}
+        >
+          Cancelar
+        </Button>
+        <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+          {form.state.isSubmitting ? 'Salvando...' : 'Salvar'}
+        </Button>
+      </div>
+    </form>
+  )
+}

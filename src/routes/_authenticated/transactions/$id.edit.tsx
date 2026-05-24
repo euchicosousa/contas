@@ -1,0 +1,53 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { TransactionForm } from '#/features/transactions/components/TransactionForm'
+import { useTransaction, useUpdateTransaction } from '#/features/transactions/hooks/useTransactions'
+
+export const Route = createFileRoute('/_authenticated/transactions/$id/edit')({
+  component: EditTransactionRoute,
+})
+
+function EditTransactionRoute() {
+  const { id } = Route.useParams()
+  const navigate = useNavigate()
+  
+  const { data: transaction, isLoading, error } = useTransaction(id)
+  const { mutateAsync: updateTransaction } = useUpdateTransaction()
+
+  if (isLoading) {
+    return <div className="text-center p-8 text-muted-foreground">Carregando transação...</div>
+  }
+
+  if (error || !transaction) {
+    return <div className="text-center p-8 text-destructive">Transação não encontrada ou erro ao carregar.</div>
+  }
+
+  return (
+    <div className="mx-auto max-w-xl space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold tracking-tight">Editar Lançamento</h1>
+        <p className="text-sm text-muted-foreground">
+          Modifique os dados da transação abaixo.
+        </p>
+      </div>
+
+      <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <TransactionForm
+          defaultValues={{
+            title: transaction.title,
+            amount: transaction.amount,
+            amount_paid: transaction.amount_paid,
+            payment_date: transaction.payment_date,
+            transaction_type: transaction.transaction_type,
+            categories: transaction.categories,
+            notes: transaction.notes,
+            group_id: transaction.group_id,
+          }}
+          onSubmit={async (values) => {
+            await updateTransaction({ id, ...values })
+            navigate({ to: '/transactions' })
+          }}
+        />
+      </div>
+    </div>
+  )
+}
