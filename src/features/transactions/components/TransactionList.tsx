@@ -1,6 +1,6 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
-import { AlertCircleIcon } from 'lucide-react'
+import { addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
+import { AlertCircleIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 import { useDeleteTransaction, useDuplicateTransaction, useLateTransactions, useTransactions, useUpdateTransaction } from '../hooks/useTransactions'
 import { TransactionCalendar } from './TransactionCalendar'
@@ -37,8 +37,8 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
   const { data: transactions, isLoading, error } = useTransactions(filters)
   const { data: lateTransactions } = useLateTransactions()
 
-  const sortedTransactionsForList = React.useMemo(() => {
-    if (!transactions) return []
+  const { entradas, saidas } = React.useMemo(() => {
+    if (!transactions) return { entradas: [], saidas: [] }
     const sortFn = (a: any, b: any) => {
       const dateA = a.payment_date || ''
       const dateB = b.payment_date || ''
@@ -47,7 +47,7 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
     }
     const entradas = transactions.filter(t => t.transaction_type === 'entrada').sort(sortFn)
     const saidas = transactions.filter(t => t.transaction_type !== 'entrada').sort(sortFn)
-    return [...entradas, ...saidas]
+    return { entradas, saidas }
   }, [transactions])
 
   const sortedLateTransactions = React.useMemo(() => {
@@ -146,7 +146,35 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
       <div className="space-y-4">
         {/* Header with Tabs */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className="text-lg font-bold first-letter:capitalize">{ format(dateFrom, "MMMM 'de' yyyy", { locale: ptBR }) }</h2>
+          <div className="flex gap-3 items-center">
+            <button
+              type="button"
+              onClick={() => {
+                const nextDate = addMonths(parseISO(dateFrom), -1)
+                setDateFrom(format(startOfMonth(nextDate), 'yyyy-MM-dd'))
+                setDateTo(format(endOfMonth(nextDate), 'yyyy-MM-dd'))
+              }}
+              className="p-1.5 hover:bg-muted rounded-md transition-colors flex items-center justify-center cursor-pointer"
+              title="Mês Anterior"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <h2 className="text-lg font-bold first-letter:capitalize min-w-[140px] text-center">
+              {format(parseISO(dateFrom), "MMMM 'de' yyyy", { locale: ptBR })}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                const nextDate = addMonths(parseISO(dateFrom), 1)
+                setDateFrom(format(startOfMonth(nextDate), 'yyyy-MM-dd'))
+                setDateTo(format(endOfMonth(nextDate), 'yyyy-MM-dd'))
+              }}
+              className="p-1.5 hover:bg-muted rounded-md transition-colors flex items-center justify-center cursor-pointer"
+              title="Próximo Mês"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
           
           <TransactionTabs viewMode={viewMode} setViewMode={setViewMode} />
         </div>
@@ -159,16 +187,41 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
             Nenhum lançamento encontrado neste período.
           </div>
         ) : viewMode === 'list' ? (
-          <TransactionTable 
-            txs={sortedTransactionsForList} 
-            updatingIds={updatingIds}
-            isDeleting={isDeleting}
-            isDuplicating={isDuplicating}
-            onUpdateTitle={handleUpdateTitle}
-            onMarkAsPaid={handleMarkAsPaid}
-            onDelete={deleteTransaction}
-            onDuplicate={duplicateTransaction}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-start">
+            {/* Tabela de Entradas */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 pl-1">
+                Entradas (+)
+              </h3>
+              <TransactionTable 
+                txs={entradas} 
+                updatingIds={updatingIds}
+                isDeleting={isDeleting}
+                isDuplicating={isDuplicating}
+                onUpdateTitle={handleUpdateTitle}
+                onMarkAsPaid={handleMarkAsPaid}
+                onDelete={deleteTransaction}
+                onDuplicate={duplicateTransaction}
+              />
+            </div>
+
+            {/* Tabela de Saídas */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 pl-1">
+                Saídas (-)
+              </h3>
+              <TransactionTable 
+                txs={saidas} 
+                updatingIds={updatingIds}
+                isDeleting={isDeleting}
+                isDuplicating={isDuplicating}
+                onUpdateTitle={handleUpdateTitle}
+                onMarkAsPaid={handleMarkAsPaid}
+                onDelete={deleteTransaction}
+                onDuplicate={duplicateTransaction}
+              />
+            </div>
+          </div>
         ) : viewMode === 'calendar' ? (
           <TransactionCalendar 
             transactions={transactions} 

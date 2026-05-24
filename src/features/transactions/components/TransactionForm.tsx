@@ -5,7 +5,12 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { GroupSelect } from '#/features/groups/components/GroupSelect'
 import type { CreateTransactionInput } from '../types'
-import { addMonths, format } from 'date-fns'
+import { addMonths, format, parseISO } from 'date-fns'
+import { Calendar } from '#/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '#/components/ui/popover'
+import { CalendarIcon } from 'lucide-react'
+import { ptBR } from 'date-fns/locale'
+import { cn } from '#/lib/utils'
 
 interface TransactionFormProps {
   defaultValues?: Partial<CreateTransactionInput>
@@ -15,6 +20,7 @@ interface TransactionFormProps {
 export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProps) {
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
   const [installments, setInstallments] = React.useState<number>(1)
+  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false)
 
   const form = useForm({
     defaultValues: {
@@ -31,10 +37,11 @@ export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProp
     onSubmit: async ({ value }) => {
       setErrorMsg(null)
       try {
-        // Se marcado como pago, garantir que o valor pago é igual ao total
+        // Se marcado como pago, garantir que o valor pago é igual ao total.
+        // Se não pago, garantir que o valor pago não ultrapassa o total para evitar violação de constraint do banco.
         const finalValue = {
           ...value,
-          amount_paid: value.is_paid ? value.amount : value.amount_paid
+          amount_paid: value.is_paid ? value.amount : Math.min(value.amount_paid ?? 0, value.amount)
         }
 
         if (finalValue.transaction_type === 'saida' && installments > 1) {
@@ -151,19 +158,50 @@ export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProp
           />
           <form.Field
             name="payment_date"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Data de Pagamento</Label>
-                <Input
-                  id={field.name}
-                  type="date"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  required
-                />
-              </div>
-            )}
+            children={(field) => {
+              const dateVal = field.state.value ? parseISO(field.state.value) : undefined
+              return (
+                <div className="space-y-2 flex flex-col justify-end">
+                  <Label htmlFor={field.name}>Data de Pagamento</Label>
+                  <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          id={field.name}
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            "w-full h-9 justify-start text-left font-normal px-3",
+                            !field.state.value && "text-muted-foreground"
+                          )}
+                        />
+                      }
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {field.state.value ? (
+                        format(parseISO(field.state.value), "dd 'de' MMMM', 'yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateVal}
+                        onSelect={(date) => {
+                          if (date) {
+                            field.handleChange(format(date, 'yyyy-MM-dd'))
+                            setIsCalendarOpen(false)
+                          }
+                        }}
+                        locale={ptBR}
+                        autoFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )
+            }}
           />
         </div>
 

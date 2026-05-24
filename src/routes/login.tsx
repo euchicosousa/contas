@@ -23,7 +23,7 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">
+      <div className="w-full max-w-md">
         <LoginForm />
       </div>
     </div>

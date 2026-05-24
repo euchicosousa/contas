@@ -101,15 +101,22 @@ export function TransactionTable({
       <table className="w-full text-sm table-fixed">
         <thead>
           <tr className={`border-b text-left text-muted-foreground ${isLateSection ? 'bg-destructive/10 text-destructive' : 'bg-muted/50'}`}>
-            <th className="p-4 font-medium w-28 sm:w-32">Data</th>
+            <th className="p-4 font-medium w-20 sm:w-24">Data</th>
             <th className="p-4 font-medium">Título</th>
-            <th className="p-4 font-medium text-right w-32 sm:w-40">Valor</th>
-            <th className="p-4 font-medium w-48 text-center">Status / Ações</th>
+            <th className="p-4 font-medium text-right w-24 sm:w-28">Valor</th>
+            <th className="p-4 font-medium w-40 sm:w-44 text-center">Status / Ações</th>
           </tr>
         </thead>
         <tbody className="group">
-          {txs.map((tx) => (
-            <tr key={tx.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors group/row ${isLateSection ? 'bg-destructive/5' : ''}`}>
+          {txs.length === 0 ? (
+            <tr>
+              <td colSpan={4} className="p-8 text-center text-muted-foreground border-b last:border-0 border-dashed">
+                Nenhum lançamento registrado.
+              </td>
+            </tr>
+          ) : (
+            txs.map((tx) => (
+              <tr key={tx.id} className={`border-b last:border-0 hover:bg-muted/50 transition-colors group/row ${isLateSection ? 'bg-destructive/5' : ''}`}>
               <td className="p-4 whitespace-nowrap">
                 {format(parseISO(tx.payment_date), "dd 'de' MMM", { locale: ptBR })}
               </td>
@@ -172,7 +179,7 @@ export function TransactionTable({
                 </div>
               </td>
             </tr>
-          ))}
+          )))}
         </tbody>
       </table>
     </div>
