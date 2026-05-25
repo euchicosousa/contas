@@ -38,9 +38,9 @@ function EditTransactionRoute() {
             amount_paid: transaction.amount_paid,
             payment_date: transaction.payment_date,
             transaction_type: transaction.transaction_type,
-            categories: transaction.categories,
             notes: transaction.notes,
             group_id: transaction.group_id,
+            is_paid: transaction.is_paid,
           }}
           onSubmit={async (values) => {
             await updateTransaction({ id, ...values })

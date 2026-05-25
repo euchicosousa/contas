@@ -1,9 +1,6 @@
-
 import { CheckIcon, AlertTriangleIcon, CheckCircle2Icon } from 'lucide-react'
 import { Button } from '#/components/ui/button'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+import { formatCurrency } from '#/lib/utils'
 
 interface PayButtonProps {
   tx: any

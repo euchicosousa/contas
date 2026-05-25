@@ -14,7 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedTransactionsIndexRouteImport } from './routes/_authenticated/transactions/index'
-import { Route as AuthenticatedGroupsIndexRouteImport } from './routes/_authenticated/groups/index'
+import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authenticated/accounts/index'
 import { Route as AuthenticatedTransactionsNewRouteImport } from './routes/_authenticated/transactions/new'
 import { Route as AuthenticatedTransactionsIdEditRouteImport } from './routes/_authenticated/transactions/$id.edit'
 
@@ -43,10 +43,10 @@ const AuthenticatedTransactionsIndexRoute =
     path: '/transactions/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedGroupsIndexRoute =
-  AuthenticatedGroupsIndexRouteImport.update({
-    id: '/groups/',
-    path: '/groups/',
+const AuthenticatedAccountsIndexRoute =
+  AuthenticatedAccountsIndexRouteImport.update({
+    id: '/accounts/',
+    path: '/accounts/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedTransactionsNewRoute =
@@ -67,7 +67,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/transactions/new': typeof AuthenticatedTransactionsNewRoute
-  '/groups/': typeof AuthenticatedGroupsIndexRoute
+  '/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/transactions/': typeof AuthenticatedTransactionsIndexRoute
   '/transactions/$id/edit': typeof AuthenticatedTransactionsIdEditRoute
 }
@@ -76,7 +76,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/transactions/new': typeof AuthenticatedTransactionsNewRoute
-  '/groups': typeof AuthenticatedGroupsIndexRoute
+  '/accounts': typeof AuthenticatedAccountsIndexRoute
   '/transactions': typeof AuthenticatedTransactionsIndexRoute
   '/transactions/$id/edit': typeof AuthenticatedTransactionsIdEditRoute
 }
@@ -87,7 +87,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/transactions/new': typeof AuthenticatedTransactionsNewRoute
-  '/_authenticated/groups/': typeof AuthenticatedGroupsIndexRoute
+  '/_authenticated/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/_authenticated/transactions/': typeof AuthenticatedTransactionsIndexRoute
   '/_authenticated/transactions/$id/edit': typeof AuthenticatedTransactionsIdEditRoute
 }
@@ -98,7 +98,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/dashboard'
     | '/transactions/new'
-    | '/groups/'
+    | '/accounts/'
     | '/transactions/'
     | '/transactions/$id/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -107,7 +107,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/dashboard'
     | '/transactions/new'
-    | '/groups'
+    | '/accounts'
     | '/transactions'
     | '/transactions/$id/edit'
   id:
@@ -117,7 +117,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/dashboard'
     | '/_authenticated/transactions/new'
-    | '/_authenticated/groups/'
+    | '/_authenticated/accounts/'
     | '/_authenticated/transactions/'
     | '/_authenticated/transactions/$id/edit'
   fileRoutesById: FileRoutesById
@@ -165,11 +165,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTransactionsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/groups/': {
-      id: '/_authenticated/groups/'
-      path: '/groups'
-      fullPath: '/groups/'
-      preLoaderRoute: typeof AuthenticatedGroupsIndexRouteImport
+    '/_authenticated/accounts/': {
+      id: '/_authenticated/accounts/'
+      path: '/accounts'
+      fullPath: '/accounts/'
+      preLoaderRoute: typeof AuthenticatedAccountsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/transactions/new': {
@@ -192,7 +192,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedTransactionsNewRoute: typeof AuthenticatedTransactionsNewRoute
-  AuthenticatedGroupsIndexRoute: typeof AuthenticatedGroupsIndexRoute
+  AuthenticatedAccountsIndexRoute: typeof AuthenticatedAccountsIndexRoute
   AuthenticatedTransactionsIndexRoute: typeof AuthenticatedTransactionsIndexRoute
   AuthenticatedTransactionsIdEditRoute: typeof AuthenticatedTransactionsIdEditRoute
 }
@@ -200,7 +200,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedTransactionsNewRoute: AuthenticatedTransactionsNewRoute,
-  AuthenticatedGroupsIndexRoute: AuthenticatedGroupsIndexRoute,
+  AuthenticatedAccountsIndexRoute: AuthenticatedAccountsIndexRoute,
   AuthenticatedTransactionsIndexRoute: AuthenticatedTransactionsIndexRoute,
   AuthenticatedTransactionsIdEditRoute: AuthenticatedTransactionsIdEditRoute,
 }

@@ -4,6 +4,7 @@ import { useDashboardSummary } from '#/features/transactions/hooks/useDashboardS
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { buttonVariants } from '#/components/ui/button'
+import { formatCurrency } from '#/lib/utils'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardRoute,
@@ -11,9 +12,6 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 
 function DashboardRoute() {
   const { income, expense, balance, recentTransactions, isLoading } = useDashboardSummary()
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 
   if (isLoading) {
     return <div className="text-center p-8 text-muted-foreground">Carregando painel...</div>

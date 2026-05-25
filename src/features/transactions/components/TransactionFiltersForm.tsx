@@ -1,5 +1,5 @@
 import { DatePickerWithRange } from '#/components/ui/date-range-picker'
-import { GroupSelect } from '#/features/groups/components/GroupSelect'
+import { AccountSelect } from '#/features/accounts/components/AccountSelect'
 import { FilterIcon } from 'lucide-react'
 
 interface TransactionFiltersFormProps {
@@ -60,8 +60,8 @@ export function TransactionFiltersForm({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Grupo / Pasta</label>
-          <GroupSelect
+          <label className="text-xs font-medium text-muted-foreground">Conta</label>
+          <AccountSelect
             value={filterGroup}
             onChange={setFilterGroup}
             transactionType={filterType !== 'todos' ? filterType : undefined}

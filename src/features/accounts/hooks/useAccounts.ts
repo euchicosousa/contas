@@ -1,37 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { groupsService } from '../services/groups.service'
+import { accountsService } from '../services/accounts.service'
 import { createClient } from '#/integrations/supabase/client'
 import { queryKeys } from '#/lib/query-keys'
-import type { CreateGroupInput, UpdateGroupInput } from '../types'
+import type { CreateAccountInput, UpdateAccountInput } from '../types'
 
-export function useGroups() {
+export function useAccounts() {
   const supabase = createClient()
   
   return useQuery({
     queryKey: queryKeys.groups.lists(),
-    queryFn: () => groupsService.list(supabase),
+    queryFn: () => accountsService.list(supabase),
   })
 }
 
-export function useCreateGroup() {
+export function useCreateAccount() {
   const supabase = createClient()
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: (data: CreateGroupInput) => groupsService.create(supabase, data),
+    mutationFn: (data: CreateAccountInput) => accountsService.create(supabase, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.lists() })
     },
   })
 }
 
-export function useUpdateGroup() {
+export function useUpdateAccount() {
   const supabase = createClient()
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: ({ id, ...data }: UpdateGroupInput & { id: string }) => 
-      groupsService.update(supabase, id, data),
+    mutationFn: ({ id, ...data }: UpdateAccountInput & { id: string }) => 
+      accountsService.update(supabase, id, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.detail(data.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.lists() })
@@ -39,12 +39,12 @@ export function useUpdateGroup() {
   })
 }
 
-export function useDeleteGroup() {
+export function useDeleteAccount() {
   const supabase = createClient()
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: (id: string) => groupsService.remove(supabase, id),
+    mutationFn: (id: string) => accountsService.remove(supabase, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.lists() })
     },

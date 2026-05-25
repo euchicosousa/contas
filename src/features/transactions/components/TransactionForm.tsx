@@ -3,7 +3,7 @@ import { useForm } from '@tanstack/react-form'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { GroupSelect } from '#/features/groups/components/GroupSelect'
+import { AccountSelect } from '#/features/accounts/components/AccountSelect'
 import type { CreateTransactionInput } from '../types'
 import { addMonths, format, parseISO } from 'date-fns'
 import { Calendar } from '#/components/ui/calendar'
@@ -29,7 +29,6 @@ export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProp
       amount_paid: defaultValues?.amount_paid ?? 0,
       payment_date: defaultValues?.payment_date ?? new Date().toISOString().split('T')[0],
       transaction_type: defaultValues?.transaction_type ?? 'saida',
-      categories: defaultValues?.categories ?? [],
       notes: defaultValues?.notes ?? '',
       group_id: defaultValues?.group_id ?? null,
       is_paid: defaultValues?.is_paid ?? false,
@@ -37,11 +36,14 @@ export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProp
     onSubmit: async ({ value }) => {
       setErrorMsg(null)
       try {
+        // Se o valor pago for igual ou maior que o total (e maior que zero), marcamos automaticamente como pago.
         // Se marcado como pago, garantir que o valor pago é igual ao total.
         // Se não pago, garantir que o valor pago não ultrapassa o total para evitar violação de constraint do banco.
+        const isPaid = value.is_paid || ((value.amount_paid ?? 0) >= value.amount && value.amount > 0)
         const finalValue = {
           ...value,
-          amount_paid: value.is_paid ? value.amount : Math.min(value.amount_paid ?? 0, value.amount)
+          is_paid: isPaid,
+          amount_paid: isPaid ? value.amount : Math.min(value.amount_paid ?? 0, value.amount)
         }
 
         if (finalValue.transaction_type === 'saida' && installments > 1) {
@@ -299,11 +301,11 @@ export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProp
           name="group_id"
           children={(field) => (
             <div className="space-y-2">
-              <Label htmlFor={field.name}>Grupo (Pasta)</Label>
+              <Label htmlFor={field.name}>Conta</Label>
               <form.Subscribe
                 selector={(state) => state.values.transaction_type}
                 children={(type) => (
-                  <GroupSelect
+                  <AccountSelect
                     id={field.name}
                     value={field.state.value ?? null}
                     onChange={field.handleChange}

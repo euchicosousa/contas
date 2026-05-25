@@ -12,7 +12,7 @@ type Client = SupabaseClient<Database>
 export const transactionsService = {
   /**
    * Lista todas as transações do usuário autenticado.
-   * Suporta filtros opcionais por tipo, grupo, categoria e data.
+   * Suporta filtros opcionais por tipo, conta e data.
    */
   async list(client: Client, filters?: TransactionFilters): Promise<Transaction[]> {
     let query = client
@@ -23,13 +23,12 @@ export const transactionsService = {
     if (filters?.type) {
       query = query.eq('transaction_type', filters.type)
     }
-    if (filters?.groupId !== undefined) {
+    if (filters?.groupIds && filters.groupIds.length > 0) {
+      query = query.in('group_id', filters.groupIds)
+    } else if (filters?.groupId !== undefined) {
       query = filters.groupId === null
         ? query.is('group_id', null)
         : query.eq('group_id', filters.groupId)
-    }
-    if (filters?.category) {
-      query = query.contains('categories', [filters.category])
     }
     if (filters?.dateFrom) {
       query = query.gte('payment_date', filters.dateFrom)

@@ -41,6 +41,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          parent_id: string | null
           transaction_type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string
@@ -50,6 +51,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          parent_id?: string | null
           transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id: string
@@ -59,11 +61,19 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          parent_id?: string | null
           transaction_type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transaction_groups_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transaction_groups_user_id_fkey"
             columns: ["user_id"]
@@ -77,7 +87,6 @@ export type Database = {
         Row: {
           amount: number
           amount_paid: number
-          categories: string[]
           created_at: string
           group_id: string | null
           id: string
@@ -92,7 +101,6 @@ export type Database = {
         Insert: {
           amount: number
           amount_paid?: number
-          categories?: string[]
           created_at?: string
           group_id?: string | null
           id?: string
@@ -107,7 +115,6 @@ export type Database = {
         Update: {
           amount?: number
           amount_paid?: number
-          categories?: string[]
           created_at?: string
           group_id?: string | null
           id?: string

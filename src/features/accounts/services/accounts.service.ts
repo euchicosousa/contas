@@ -1,18 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '#/integrations/supabase/database.types'
 import type {
-  TransactionGroup,
-  CreateGroupInput,
-  UpdateGroupInput,
+  TransactionAccount,
+  CreateAccountInput,
+  UpdateAccountInput,
 } from '../types'
 
 type Client = SupabaseClient<Database>
 
-export const groupsService = {
+export const accountsService = {
   /**
-   * Lista todos os grupos do usuário autenticado, ordenados por nome.
+   * Lista todas as contas do usuário autenticado, ordenadas por nome.
    */
-  async list(client: Client): Promise<TransactionGroup[]> {
+  async list(client: Client): Promise<TransactionAccount[]> {
     const { data, error } = await client
       .from('transaction_groups')
       .select('*')
@@ -23,9 +23,9 @@ export const groupsService = {
   },
 
   /**
-   * Busca um grupo pelo ID.
+   * Busca uma conta pelo ID.
    */
-  async getById(client: Client, id: string): Promise<TransactionGroup> {
+  async getById(client: Client, id: string): Promise<TransactionAccount> {
     const { data, error } = await client
       .from('transaction_groups')
       .select('*')
@@ -37,9 +37,9 @@ export const groupsService = {
   },
 
   /**
-   * Cria um novo grupo.
+   * Cria uma nova conta.
    */
-  async create(client: Client, input: CreateGroupInput): Promise<TransactionGroup> {
+  async create(client: Client, input: CreateAccountInput): Promise<TransactionAccount> {
     const user = await client.auth.getUser()
     if (!user.data.user) throw new Error('Usuário não autenticado')
 
@@ -57,9 +57,9 @@ export const groupsService = {
   },
 
   /**
-   * Atualiza um grupo existente.
+   * Atualiza uma conta existente.
    */
-  async update(client: Client, id: string, input: UpdateGroupInput): Promise<TransactionGroup> {
+  async update(client: Client, id: string, input: UpdateAccountInput): Promise<TransactionAccount> {
     const { data, error } = await client
       .from('transaction_groups')
       .update(input)
@@ -72,7 +72,7 @@ export const groupsService = {
   },
 
   /**
-   * Remove um grupo. Transações vinculadas ficam com group_id = null (FK nullable).
+   * Remove uma conta. Transações vinculadas ficam com group_id = null (FK nullable).
    */
   async remove(client: Client, id: string): Promise<void> {
     const { error } = await client

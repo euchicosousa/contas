@@ -25,7 +25,7 @@ export type UpdateTransactionInput = Omit<
 export type TransactionFilters = {
   type?: TransactionType
   groupId?: string | null
-  category?: string
+  groupIds?: string[]
   dateFrom?: string
   dateTo?: string
   search?: string

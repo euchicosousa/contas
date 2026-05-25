@@ -12,8 +12,8 @@ function TransactionsRoute() {
   const [showFilters, setShowFilters] = useState(false)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="flex-1 w-full flex flex-col overflow-hidden gap-6">
+      <div className="flex items-center justify-between shrink-0">
         <h1 className="text-2xl font-bold tracking-tight">Lançamentos</h1>
         <div className="flex items-center gap-2">
           <Button 

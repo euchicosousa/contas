@@ -1,8 +1,9 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
-import { AlertCircleIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FolderTree } from 'lucide-react'
 import * as React from 'react'
-import { useDeleteTransaction, useDuplicateTransaction, useLateTransactions, useTransactions, useUpdateTransaction } from '../hooks/useTransactions'
+import { useDeleteTransaction, useDuplicateTransaction, useTransactions, useUpdateTransaction } from '../hooks/useTransactions'
+import { useAccounts } from '#/features/accounts/hooks/useAccounts'
 import { TransactionCalendar } from './TransactionCalendar'
 import { TransactionDailyView } from './TransactionDailyView'
 import { TransactionTable } from './TransactionTable'
@@ -10,12 +11,23 @@ import { TransactionTabs } from './TransactionTabs'
 import { TransactionFiltersForm } from './TransactionFiltersForm'
 import { ptBR } from 'date-fns/locale'
 
+function sortTransactions(a: any, b: any) {
+  const dateA = a.payment_date || ''
+  const dateB = b.payment_date || ''
+  if (dateA !== dateB) return dateA.localeCompare(dateB)
+  return (a.title || '').localeCompare(b.title || '')
+}
+
 export function TransactionList({ showFilters = false }: { showFilters?: boolean }) {
   const today = new Date()
   const [dateFrom, setDateFrom] = React.useState(format(startOfMonth(today), 'yyyy-MM-dd'))
   const [dateTo, setDateTo] = React.useState(format(endOfMonth(today), 'yyyy-MM-dd'))
   const [filterType, setFilterType] = React.useState<'entrada' | 'saida' | 'todos'>('todos')
   const [filterGroup, setFilterGroup] = React.useState<string | null>(null)
+
+  const { data: accounts } = useAccounts()
+
+  const [isGrouped, setIsGrouped] = React.useState(true)
 
   const navigate = useNavigate()
   const search = useSearch({ strict: false }) as any
@@ -27,41 +39,30 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
     } as any)
   }
 
+  const groupIds = React.useMemo(() => {
+    if (!filterGroup) return undefined
+    if (!accounts) return [filterGroup]
+    
+    // Busca contas filhas associadas a essa conta pai
+    const children = accounts.filter(acc => acc.parent_id === filterGroup)
+    return [filterGroup, ...children.map(c => c.id)]
+  }, [filterGroup, accounts])
+
   const filters = {
     dateFrom,
     dateTo,
     ...(filterType !== 'todos' ? { type: filterType as 'entrada' | 'saida' } : {}),
-    ...(filterGroup ? { groupId: filterGroup } : {}),
+    ...(groupIds ? { groupIds } : {}),
   }
 
   const { data: transactions, isLoading, error } = useTransactions(filters)
-  const { data: lateTransactions } = useLateTransactions()
 
   const { entradas, saidas } = React.useMemo(() => {
     if (!transactions) return { entradas: [], saidas: [] }
-    const sortFn = (a: any, b: any) => {
-      const dateA = a.payment_date || ''
-      const dateB = b.payment_date || ''
-      if (dateA !== dateB) return dateA.localeCompare(dateB)
-      return (a.title || '').localeCompare(b.title || '')
-    }
-    const entradas = transactions.filter(t => t.transaction_type === 'entrada').sort(sortFn)
-    const saidas = transactions.filter(t => t.transaction_type !== 'entrada').sort(sortFn)
+    const entradas = transactions.filter(t => t.transaction_type === 'entrada').sort(sortTransactions)
+    const saidas = transactions.filter(t => t.transaction_type !== 'entrada').sort(sortTransactions)
     return { entradas, saidas }
   }, [transactions])
-
-  const sortedLateTransactions = React.useMemo(() => {
-    if (!lateTransactions) return []
-    const sortFn = (a: any, b: any) => {
-      const dateA = a.payment_date || ''
-      const dateB = b.payment_date || ''
-      if (dateA !== dateB) return dateA.localeCompare(dateB)
-      return (a.title || '').localeCompare(b.title || '')
-    }
-    const entradas = lateTransactions.filter(t => t.transaction_type === 'entrada').sort(sortFn)
-    const saidas = lateTransactions.filter(t => t.transaction_type !== 'entrada').sort(sortFn)
-    return [...entradas, ...saidas]
-  }, [lateTransactions])
 
   const { mutate: deleteTransaction, isPending: isDeleting } = useDeleteTransaction()
   const { mutate: duplicateTransaction, isPending: isDuplicating } = useDuplicateTransaction()
@@ -106,46 +107,27 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
   }
 
   return (
-    <div className="space-y-8">
-      
-      {/* Contas em Atraso Section */}
-      {lateTransactions && lateTransactions.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircleIcon className="h-5 w-5" />
-            <h2 className="text-lg font-bold">Contas em Atraso</h2>
-          </div>
-          <TransactionTable 
-            txs={sortedLateTransactions} 
-            isLateSection={true} 
-            updatingIds={updatingIds}
-            isDeleting={isDeleting}
-            isDuplicating={isDuplicating}
-            onUpdateTitle={handleUpdateTitle}
-            onMarkAsPaid={handleMarkAsPaid}
-            onDelete={deleteTransaction}
-            onDuplicate={duplicateTransaction}
-          />
-        </div>
-      )}
+    <div className="flex-1 w-full flex flex-col overflow-hidden gap-6">
 
       {/* Filtros Avançados */}
-      <TransactionFiltersForm
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        setDateFrom={setDateFrom}
-        setDateTo={setDateTo}
-        filterType={filterType}
-        setFilterType={setFilterType}
-        filterGroup={filterGroup}
-        setFilterGroup={setFilterGroup}
-        showFilters={showFilters}
-      />
+      <div className="shrink-0">
+        <TransactionFiltersForm
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          setDateFrom={setDateFrom}
+          setDateTo={setDateTo}
+          filterType={filterType}
+          setFilterType={setFilterType}
+          filterGroup={filterGroup}
+          setFilterGroup={setFilterGroup}
+          showFilters={showFilters}
+        />
+      </div>
 
       {/* Main View Area */}
-      <div className="space-y-4">
+      <div className="flex-1 flex flex-col overflow-hidden gap-4">
         {/* Header with Tabs */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
           <div className="flex gap-3 items-center">
             <button
               type="button"
@@ -176,25 +158,42 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
             </button>
           </div>
           
-          <TransactionTabs viewMode={viewMode} setViewMode={setViewMode} />
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+            {viewMode === 'list' && (
+              <button
+                type="button"
+                onClick={() => setIsGrouped(!isGrouped)}
+                className={`flex items-center justify-center p-2 rounded-md border shadow-sm transition-all cursor-pointer ${
+                  isGrouped
+                    ? 'bg-primary text-primary-foreground border-primary shadow-[0_2px_4px_rgba(0,0,0,0.1)]'
+                    : 'bg-background text-foreground border-input hover:bg-muted'
+                }`}
+                title={isGrouped ? 'Desagrupar Contas (Visualização Plana)' : 'Agrupar por Conta'}
+              >
+                <FolderTree className="h-4 w-4" />
+              </button>
+            )}
+            <TransactionTabs viewMode={viewMode} setViewMode={setViewMode} />
+          </div>
         </div>
 
         {/* Content */}
         {isLoading ? (
-          <div className="text-center p-4 text-muted-foreground">Carregando lançamentos...</div>
+          <div className="text-center p-4 text-muted-foreground flex-1 flex items-center justify-center">Carregando lançamentos...</div>
         ) : !transactions || transactions.length === 0 ? (
-          <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
+          <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground flex-1 flex flex-col justify-center items-center">
             Nenhum lançamento encontrado neste período.
           </div>
         ) : viewMode === 'list' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-start">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 w-full overflow-hidden items-stretch">
             {/* Tabela de Entradas */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 pl-1">
+            <div className="flex flex-col h-full overflow-hidden space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 pl-1 shrink-0">
                 Entradas (+)
               </h3>
               <TransactionTable 
                 txs={entradas} 
+                isGrouped={isGrouped}
                 updatingIds={updatingIds}
                 isDeleting={isDeleting}
                 isDuplicating={isDuplicating}
@@ -206,12 +205,13 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
             </div>
 
             {/* Tabela de Saídas */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 pl-1">
+            <div className="flex flex-col h-full overflow-hidden space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 pl-1 shrink-0">
                 Saídas (-)
               </h3>
               <TransactionTable 
                 txs={saidas} 
+                isGrouped={isGrouped}
                 updatingIds={updatingIds}
                 isDeleting={isDeleting}
                 isDuplicating={isDuplicating}
@@ -223,18 +223,22 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
             </div>
           </div>
         ) : viewMode === 'calendar' ? (
-          <TransactionCalendar 
-            transactions={transactions} 
-            currentDate={parseISO(dateFrom)} 
-            updatingIds={updatingIds}
-            onMarkAsPaid={handleMarkAsPaid}
-          />
+          <div className="flex-1 overflow-auto">
+            <TransactionCalendar 
+              transactions={transactions} 
+              currentDate={parseISO(dateFrom)} 
+              updatingIds={updatingIds}
+              onMarkAsPaid={handleMarkAsPaid}
+            />
+          </div>
         ) : (
-          <TransactionDailyView 
-            transactions={transactions}
-            updatingIds={updatingIds}
-            onMarkAsPaid={handleMarkAsPaid}
-          />
+          <div className="flex-1 overflow-auto">
+            <TransactionDailyView 
+              transactions={transactions}
+              updatingIds={updatingIds}
+              onMarkAsPaid={handleMarkAsPaid}
+            />
+          </div>
         )}
       </div>
 

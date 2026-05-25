@@ -14,7 +14,7 @@ export const Route = createFileRoute('/')({
     const hasSession = await checkAuthSessionFn()
     
     if (hasSession) {
-      throw redirect({ to: '/dashboard' })
+      throw redirect({ to: '/transactions' })
     } else {
       throw redirect({ to: '/login' })
     }

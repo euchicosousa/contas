@@ -2,9 +2,7 @@ import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import * as React from 'react'
 import { TransactionItem } from './TransactionItem'
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+import { formatCurrency } from '#/lib/utils'
 
 interface TransactionDailyViewProps {
   transactions: any[]

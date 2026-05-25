@@ -42,10 +42,10 @@ function AuthenticatedLayout() {
     (searchParams.get('view') === 'calendar' || searchParams.get('view') === 'daily')
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 md:px-6 backdrop-blur">
+    <div className="flex h-screen flex-col overflow-hidden">
+      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 md:px-6 backdrop-blur shrink-0">
         <div className="flex items-center gap-6">
-          <Link to="/dashboard" onClick={closeMenu} className="text-xl font-bold tracking-tight text-primary hover:opacity-80 transition-opacity">
+          <Link to="/transactions" onClick={closeMenu} className="text-xl font-bold tracking-tight text-primary hover:opacity-80 transition-opacity">
             MONNAIE
           </Link>
           <nav className="hidden md:flex items-center gap-4 text-sm font-medium">
@@ -56,10 +56,10 @@ function AuthenticatedLayout() {
               Lançamentos
             </Link>
             <Link 
-              to="/groups" 
+              to="/accounts" 
               className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
             >
-              Pastas
+              Contas
             </Link>
           </nav>
         </div>
@@ -88,19 +88,19 @@ function AuthenticatedLayout() {
             Lançamentos
           </Link>
           <Link 
-            to="/groups" 
+            to="/accounts" 
             onClick={closeMenu}
             className="block text-base font-medium text-muted-foreground hover:text-foreground [&.active]:text-foreground"
           >
-            Pastas
+            Contas
           </Link>
           <hr className="border-border" />
           <LogoutButton />
         </div>
       )}
 
-      <main className="flex-1 overflow-auto">
-        <div className={isFullWidthView ? "w-full p-4 md:p-6" : "mx-auto max-w-7xl p-4 md:p-6"}>
+      <main className="flex-1 overflow-hidden flex flex-col">
+        <div className={isFullWidthView ? "w-full flex-1 flex flex-col p-4 md:p-6 overflow-hidden" : "mx-auto max-w-7xl w-full flex-1 flex flex-col p-4 md:p-6 overflow-hidden"}>
           <Outlet />
         </div>
       </main>
