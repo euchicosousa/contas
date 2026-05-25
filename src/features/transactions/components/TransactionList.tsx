@@ -2,7 +2,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { addMonths, endOfMonth, format, parseISO, startOfMonth } from 'date-fns'
 import { ChevronLeft, ChevronRight, FolderTree } from 'lucide-react'
 import * as React from 'react'
-import { useDeleteTransaction, useDuplicateTransaction, useTransactions, useUpdateTransaction } from '../hooks/useTransactions'
+import { useDeleteTransaction, useDuplicateTransaction, useTransactions, useUpdateTransaction, useCreateManyTransactions } from '../hooks/useTransactions'
 import { useAccounts } from '#/features/accounts/hooks/useAccounts'
 import { TransactionCalendar } from './TransactionCalendar'
 import { TransactionDailyView } from './TransactionDailyView'
@@ -28,6 +28,17 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
   const { data: accounts } = useAccounts()
 
   const [isGrouped, setIsGrouped] = React.useState(true)
+
+  // Duplication dialog state & ref
+  const [duplicateSource, setDuplicateSource] = React.useState<{
+    groupId: string
+    groupName: string
+    txs: any[]
+  } | null>(null)
+  const duplicateDialogRef = React.useRef<HTMLDialogElement>(null)
+  const [targetMonth, setTargetMonth] = React.useState<number>(6)
+  const [targetYear, setTargetYear] = React.useState<number>(2026)
+  const [targetStatus, setTargetStatus] = React.useState<'original' | 'pending' | 'paid'>('pending')
 
   const navigate = useNavigate()
   const search = useSearch({ strict: false }) as any
@@ -67,6 +78,71 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
   const { mutate: deleteTransaction, isPending: isDeleting } = useDeleteTransaction()
   const { mutate: duplicateTransaction, isPending: isDuplicating } = useDuplicateTransaction()
   const { mutateAsync: updateTransactionAsync } = useUpdateTransaction()
+  const { mutateAsync: createManyTransactions, isPending: isCreatingMany } = useCreateManyTransactions()
+
+  const handleOpenDuplicateDialog = (groupId: string, groupName: string, txs: any[]) => {
+    const [currentYear, currentMonth] = dateFrom.split('-').map(Number)
+    let nextMonth = currentMonth + 1
+    let nextYear = currentYear
+    if (nextMonth > 12) {
+      nextMonth = 1
+      nextYear += 1
+    }
+    
+    setTargetMonth(nextMonth)
+    setTargetYear(nextYear)
+    setTargetStatus('pending')
+    setDuplicateSource({ groupId, groupName, txs })
+    duplicateDialogRef.current?.showModal()
+  }
+
+  const handleConfirmDuplicate = async () => {
+    if (!duplicateSource || duplicateSource.txs.length === 0) return
+
+    try {
+      const inputs = duplicateSource.txs.map((tx) => {
+        const origDay = Number(tx.payment_date.split('-')[2])
+        const targetDate = new Date(targetYear, targetMonth - 1, origDay)
+        
+        if (targetDate.getMonth() !== targetMonth - 1) {
+          const lastDay = new Date(targetYear, targetMonth, 0).getDate()
+          targetDate.setDate(lastDay)
+        }
+        
+        const newPaymentDate = format(targetDate, 'yyyy-MM-dd')
+
+        let isPaid = tx.is_paid
+        let amountPaid = tx.amount_paid
+
+        if (targetStatus === 'pending') {
+          isPaid = false
+          amountPaid = 0
+        } else if (targetStatus === 'paid') {
+          isPaid = true
+          amountPaid = tx.amount
+        }
+
+        return {
+          title: tx.title,
+          amount: tx.amount,
+          amount_paid: amountPaid,
+          is_paid: isPaid,
+          payment_date: newPaymentDate,
+          transaction_type: tx.transaction_type,
+          group_id: tx.group_id,
+          notes: tx.notes,
+        }
+      })
+
+      await createManyTransactions(inputs)
+      
+      duplicateDialogRef.current?.close()
+      setDuplicateSource(null)
+    } catch (err) {
+      console.error('Erro ao duplicar lançamentos:', err)
+    }
+  }
+
   const [updatingIds, setUpdatingIds] = React.useState<Set<string>>(new Set())
 
   const handleMarkAsPaid = async (tx: any) => {
@@ -201,6 +277,7 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
                 onMarkAsPaid={handleMarkAsPaid}
                 onDelete={deleteTransaction}
                 onDuplicate={duplicateTransaction}
+                onDuplicateGroup={handleOpenDuplicateDialog}
               />
             </div>
 
@@ -219,6 +296,7 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
                 onMarkAsPaid={handleMarkAsPaid}
                 onDelete={deleteTransaction}
                 onDuplicate={duplicateTransaction}
+                onDuplicateGroup={handleOpenDuplicateDialog}
               />
             </div>
           </div>
@@ -242,6 +320,117 @@ export function TransactionList({ showFilters = false }: { showFilters?: boolean
         )}
       </div>
 
+      {/* Diálogo de Duplicação em Lote */}
+      <dialog
+        ref={duplicateDialogRef}
+        className="rounded-xl border bg-card p-6 shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm open:animate-in open:fade-in open:zoom-in-95 duration-200 w-full max-w-md focus:outline-none"
+        onClose={() => setDuplicateSource(null)}
+      >
+        {duplicateSource && (
+          <div className="space-y-5">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">
+                Duplicar lançamentos de "{duplicateSource.groupName}"
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Isso criará uma cópia de todos os {duplicateSource.txs.length} lançamentos desta conta e subcontas no período selecionado.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Mês e Ano de Destino */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label htmlFor="dup-month" className="text-xs font-semibold text-muted-foreground">Mês de Destino</label>
+                  <select
+                    id="dup-month"
+                    value={targetMonth}
+                    onChange={(e) => setTargetMonth(Number(e.target.value))}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                      <option key={m} value={m}>
+                        {format(new Date(2026, m - 1, 1), 'MMMM', { locale: ptBR })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="dup-year" className="text-xs font-semibold text-muted-foreground">Ano de Destino</label>
+                  <input
+                    id="dup-year"
+                    type="number"
+                    value={targetYear}
+                    onChange={(e) => setTargetYear(Number(e.target.value))}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              </div>
+
+              {/* Status de Destino */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground">Status Financeiro no Destino</label>
+                <div className="space-y-2 pt-1">
+                  <label className="flex items-center space-x-2.5 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dup-status"
+                      value="pending"
+                      checked={targetStatus === 'pending'}
+                      onChange={() => setTargetStatus('pending')}
+                      className="h-4 w-4 text-primary focus:ring-primary"
+                    />
+                    <span>Pendente / Não Pago</span>
+                  </label>
+                  <label className="flex items-center space-x-2.5 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dup-status"
+                      value="paid"
+                      checked={targetStatus === 'paid'}
+                      onChange={() => setTargetStatus('paid')}
+                      className="h-4 w-4 text-primary focus:ring-primary"
+                    />
+                    <span>Pago / Concluído</span>
+                  </label>
+                  <label className="flex items-center space-x-2.5 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dup-status"
+                      value="original"
+                      checked={targetStatus === 'original'}
+                      onChange={() => setTargetStatus('original')}
+                      className="h-4 w-4 text-primary focus:ring-primary"
+                    />
+                    <span>Manter status original</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Ações */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => duplicateDialogRef.current?.close()}
+                className="h-9 px-4 py-2 text-sm font-semibold rounded-md border border-input bg-background hover:bg-muted transition-colors cursor-pointer"
+                disabled={isCreatingMany}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDuplicate}
+                className="h-9 px-4 py-2 text-sm font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow cursor-pointer disabled:opacity-50"
+                disabled={isCreatingMany}
+              >
+                {isCreatingMany ? 'Duplicando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        )}
+      </dialog>
     </div>
   )
 }

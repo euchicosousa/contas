@@ -315,3 +315,19 @@ a {
     @apply font-sans;
   }
 }
+
+::-webkit-scrollbar {
+  @apply h-2 w-2 appearance-none;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-foreground/10 border-background rounded-full border-2;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-foreground/20;
+}

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { TransactionTableRow } from './TransactionTableRow'
 import { formatCurrency } from '#/lib/utils'
 import { useAccounts } from '#/features/accounts/hooks/useAccounts'
-import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react'
+import { ChevronDownIcon, ChevronRightIcon, CopyIcon } from 'lucide-react'
 
 interface TransactionTableProps {
   txs: any[]
@@ -14,6 +14,7 @@ interface TransactionTableProps {
   onMarkAsPaid: (tx: any) => void
   onDuplicate: (id: string) => void
   onDelete: (id: string) => void
+  onDuplicateGroup?: (groupId: string, groupName: string, txs: any[]) => void
 }
 
 export function TransactionTable({ 
@@ -25,7 +26,8 @@ export function TransactionTable({
   onUpdateTitle,
   onMarkAsPaid,
   onDuplicate,
-  onDelete
+  onDelete,
+  onDuplicateGroup
 }: TransactionTableProps) {
   const { data: accounts } = useAccounts()
   const [collapsedIds, setCollapsedIds] = React.useState<Set<string>>(() => new Set())
@@ -245,13 +247,30 @@ export function TransactionTable({
                         onClick={() => toggleCollapse(parent.id)}
                         className="bg-muted/20 border-b cursor-pointer hover:bg-muted/35 transition-colors font-semibold select-none"
                       >
-                        <td className="p-2.5 pl-4 text-xs font-bold text-foreground/90 whitespace-nowrap flex items-center gap-1.5" colSpan={2}>
+                        <td className="p-2.5 pl-4 text-xs font-bold text-foreground/90 whitespace-nowrap flex items-center justify-end  gap-1.5" colSpan={2}>
                           {parentExpanded ? (
-                            <ChevronDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <ChevronDownIcon className="size-4 text-muted-foreground shrink-0" />
                           ) : (
-                            <ChevronRightIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <ChevronRightIcon className="size-4 text-muted-foreground shrink-0" />
                           )}
+                        </td>
+                        <td className='pl-4'>
                           <span className="font-bold text-foreground truncate">{parent.name}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const txsToDuplicate = [
+                                ...parent.directTxs,
+                                ...parent.children.flatMap(child => child.txs)
+                              ]
+                              onDuplicateGroup?.(parent.id, parent.name, txsToDuplicate)
+                            }}
+                            className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-muted transition-all ml-1.5 shrink-0"
+                            title="Duplicar lançamentos desta conta e subcontas"
+                          >
+                            <CopyIcon className="h-3.5 w-3.5" />
+                          </button>
                         </td>
                         <td className="p-2.5 text-right font-bold text-foreground/90 whitespace-nowrap">
                           {formatCurrency(parent.totalAmount)}

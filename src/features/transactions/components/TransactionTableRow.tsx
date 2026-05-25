@@ -5,7 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { CopyIcon, Edit2Icon, Trash2Icon } from 'lucide-react'
 import { Input } from '#/components/ui/input'
 import { PayButton } from './PayButton'
-import { formatCurrency } from '#/lib/utils'
+import { cn, formatCurrency } from '#/lib/utils'
 
 function InlineEditableTitle({ 
   initialTitle, 
@@ -54,7 +54,7 @@ function InlineEditableTitle({
           }
         }}
         disabled={disabled}
-        className="w-full h-7 text-sm py-1 px-2 -ml-2 font-medium"
+        className="w-full h-6 text-sm py-1 px-2 -ml-2 font-medium"
       />
     )
   }
@@ -64,7 +64,7 @@ function InlineEditableTitle({
       type="button"
       onClick={() => setIsEditing(true)}
       disabled={disabled}
-      className="font-medium text-foreground hover:bg-muted/50 rounded -ml-2 px-2 py-0.5 transition-colors text-left disabled:opacity-50"
+      className="font-medium text-foreground hover:bg-muted/50 rounded -ml-2 px-2 py-0.5 transition-colors text-left disabled:opacity-50 truncate w-full"
     >
       {title}
     </button>
@@ -113,7 +113,7 @@ export function TransactionTableRow({
       }`}>
         {format(parseISO(tx.payment_date), "dd 'de' MMM", { locale: ptBR })}
       </td>
-      <td className={isThinner ? 'p-2 text-xs' : 'p-4'}>
+      <td className={cn( isThinner ? 'p-2 text-xs' : 'p-4', "")}>
         <div className={isSubChildRow ? 'pl-6' : isChildRow ? 'pl-2' : ''}>
           <InlineEditableTitle 
             initialTitle={tx.title} 
