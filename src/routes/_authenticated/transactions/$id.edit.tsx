@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { TransactionForm } from '#/features/transactions/components/TransactionForm'
-import { useTransaction, useUpdateTransaction } from '#/features/transactions/hooks/useTransactions'
+import { useTransaction, useUpdateTransaction, useUpdateInstallmentSiblings } from '#/features/transactions/hooks/useTransactions'
 
 export const Route = createFileRoute('/_authenticated/transactions/$id/edit')({
   component: EditTransactionRoute,
@@ -12,6 +12,7 @@ function EditTransactionRoute() {
   
   const { data: transaction, isLoading, error } = useTransaction(id)
   const { mutateAsync: updateTransaction } = useUpdateTransaction()
+  const { mutateAsync: updateInstallmentSiblings } = useUpdateInstallmentSiblings()
 
   if (isLoading) {
     return <div className="text-center p-8 text-muted-foreground">Carregando transação...</div>
@@ -43,7 +44,20 @@ function EditTransactionRoute() {
             is_paid: transaction.is_paid,
           }}
           onSubmit={async (values) => {
+            if (Array.isArray(values)) return
             await updateTransaction({ id, ...values })
+            if (transaction.installment_id) {
+              await updateInstallmentSiblings({
+                sourceId: id,
+                installmentId: transaction.installment_id,
+                patch: {
+                  title: values.title,
+                  group_id: values.group_id,
+                  amount: values.amount,
+                  notes: values.notes,
+                },
+              })
+            }
             navigate({ to: '/transactions' })
           }}
         />

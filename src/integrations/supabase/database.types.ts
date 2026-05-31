@@ -90,6 +90,9 @@ export type Database = {
           created_at: string
           group_id: string | null
           id: string
+          installment_id: string | null
+          installment_index: number | null
+          installment_total: number | null
           is_paid: boolean
           notes: string | null
           payment_date: string
@@ -104,6 +107,9 @@ export type Database = {
           created_at?: string
           group_id?: string | null
           id?: string
+          installment_id?: string | null
+          installment_index?: number | null
+          installment_total?: number | null
           is_paid?: boolean
           notes?: string | null
           payment_date: string
@@ -118,6 +124,9 @@ export type Database = {
           created_at?: string
           group_id?: string | null
           id?: string
+          installment_id?: string | null
+          installment_index?: number | null
+          installment_total?: number | null
           is_paid?: boolean
           notes?: string | null
           payment_date?: string

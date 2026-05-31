@@ -108,3 +108,28 @@ export function useDuplicateTransaction() {
     },
   })
 }
+
+export function useUpdateInstallmentSiblings() {
+  const supabase = createClient()
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({
+      sourceId,
+      installmentId,
+      patch,
+    }: {
+      sourceId: string
+      installmentId: string
+      patch: {
+        title?: string
+        group_id?: string | null
+        amount?: number
+        notes?: string | null
+      }
+    }) => transactionsService.updateInstallmentSiblings(supabase, sourceId, installmentId, patch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all })
+    },
+  })
+}

@@ -9,6 +9,15 @@ import type {
 
 type Client = SupabaseClient<Database>
 
+function buildInstallmentId(userId: string): string {
+  const ts = Date.now().toString(16).padStart(12, '0')          // 12 hex chars
+  const uFragment = userId.replace(/-/g, '').slice(0, 8)        // 8 hex chars
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+    .map(b => b.toString(16).padStart(2, '0')).join('')         // 12 hex chars
+  const hex = ts + uFragment + rand                             // 32 chars total
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`
+}
+
 export const transactionsService = {
   /**
    * Lista todas as transações do usuário autenticado.
@@ -103,11 +112,18 @@ export const transactionsService = {
    */
   async createMany(client: Client, inputs: CreateTransactionInput[]): Promise<Transaction[]> {
     const user = await client.auth.getUser()
-    if (!user.data.user) throw new Error('Usuário não autenticado')
+    const userId = user.data.user?.id
+    if (!userId) throw new Error('Usuário não autenticado')
+
+    const isInstallmentBatch = inputs.some((i) => i.installment_index != null)
+    const sharedInstallmentId = isInstallmentBatch
+      ? buildInstallmentId(userId)
+      : null
 
     const rowsToInsert = inputs.map((input) => ({
       ...input,
-      user_id: user.data.user!.id,
+      user_id: userId,
+      ...(sharedInstallmentId ? { installment_id: sharedInstallmentId } : {}),
     }))
 
     const { data, error } = await client
@@ -132,6 +148,29 @@ export const transactionsService = {
 
     if (error) throw error
     return data
+  },
+
+  /**
+   * Atualiza as transações irmãs do mesmo parcelamento.
+   */
+  async updateInstallmentSiblings(
+    client: Client,
+    sourceId: string,
+    installmentId: string,
+    patch: {
+      title?: string
+      group_id?: string | null
+      amount?: number
+      notes?: string | null
+    }
+  ): Promise<void> {
+    const { error } = await client
+      .from('transactions')
+      .update(patch)
+      .eq('installment_id', installmentId)
+      .neq('id', sourceId)
+
+    if (error) throw error
   },
 
   /**

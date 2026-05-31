@@ -54,8 +54,10 @@ export function TransactionForm({ defaultValues, onSubmit }: TransactionFormProp
             const installmentDate = addMonths(new Date(year, month - 1, day), i - 1)
             generated.push({
               ...finalValue,
-              title: `${finalValue.title} (${i}/${installments})`,
+              title: finalValue.title,
               payment_date: format(installmentDate, 'yyyy-MM-dd'),
+              installment_index: i,
+              installment_total: installments,
             })
           }
           await onSubmit(generated)

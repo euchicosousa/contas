@@ -16,6 +16,7 @@ import {
   useDuplicateTransaction,
   useTransactions,
   useUpdateTransaction,
+  useUpdateInstallmentSiblings,
 } from "../hooks/useTransactions";
 import { TransactionCalendar } from "./TransactionCalendar";
 import { TransactionDailyView } from "./TransactionDailyView";
@@ -159,6 +160,7 @@ export function TransactionList({
   const { mutate: duplicateTransaction, isPending: isDuplicating } =
     useDuplicateTransaction();
   const { mutateAsync: updateTransactionAsync } = useUpdateTransaction();
+  const { mutateAsync: updateInstallmentSiblingsAsync } = useUpdateInstallmentSiblings();
   const { mutateAsync: createManyTransactions, isPending: isCreatingMany } =
     useCreateManyTransactions();
 
@@ -256,17 +258,26 @@ export function TransactionList({
     }
   };
 
-  const handleUpdateTitle = async (id: string, newTitle: string) => {
-    setUpdatingIds((prev) => new Set(prev).add(id));
+  const handleUpdateTitle = async (tx: any, newTitle: string) => {
+    setUpdatingIds((prev) => new Set(prev).add(tx.id));
     try {
       await updateTransactionAsync({
-        id,
+        id: tx.id,
         title: newTitle,
       });
+      if (tx.installment_id) {
+        await updateInstallmentSiblingsAsync({
+          sourceId: tx.id,
+          installmentId: tx.installment_id,
+          patch: {
+            title: newTitle,
+          },
+        });
+      }
     } finally {
       setUpdatingIds((prev) => {
         const next = new Set(prev);
-        next.delete(id);
+        next.delete(tx.id);
         return next;
       });
     }
