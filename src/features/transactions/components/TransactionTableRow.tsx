@@ -78,7 +78,7 @@ interface TransactionTableRowProps {
   isDeleting: boolean
   onUpdateTitle: (id: string, title: string) => void
   onMarkAsPaid: (tx: any) => void
-  onDuplicate: (id: string) => void
+  onDuplicate: (tx: any, shiftKey: boolean) => void
   onDelete: (id: string) => void
   isChildRow?: boolean
   isSubChildRow?: boolean
@@ -143,7 +143,7 @@ export function TransactionTableRow({
           {/* Actions Area */}
           <div className="flex items-center gap-2 pl-3">
             <button
-              onClick={() => onDuplicate(tx.id)}
+              onClick={(e) => onDuplicate(tx, e.shiftKey)}
               disabled={isDuplicating}
               className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
               title="Duplicar"

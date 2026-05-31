@@ -13,7 +13,7 @@ interface TransactionTableProps {
   isDeleting: boolean;
   onUpdateTitle: (id: string, title: string) => void;
   onMarkAsPaid: (tx: any) => void;
-  onDuplicate: (id: string) => void;
+  onDuplicate: (tx: any, shiftKey: boolean) => void;
   onDelete: (id: string) => void;
   onDuplicateGroup?: (groupId: string, groupName: string, txs: any[]) => void;
 }
